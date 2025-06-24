@@ -1,0 +1,21 @@
+[minder]
+name = "OrbitSRSpeechPad" # Required parameter
+version = "1.0.0" # Required parameter
+description = "Майндер для автоматизации работы с веб-сервисом SpeechPad.ru или его локальной копией на Edge-WebSpeechAPI, с использованием Selenium WebDriver и браузера Microsoft Edge. Он позволяет автоматически управлять распознаванием речи, извлекать текст и реагировать на слова активации." # Short description. Required parameter
+authors = [ # The list of authors. If there is only one author, make a list with one dictionary.
+    { name = "esolment", email = "esolment@gmail.com" }
+]
+readme = "README.md" #  README file
+urls = [ # Links. For example, a repository, an official website, etc.
+    "https://github.com/esolment/OrbitSRSpeechPad"
+]
+license = "MIT" # Minder license
+python = "==3.11.*" # Required Python version
+mind = ">=1.0.0" # Required Mind version
+install-requires = [ # List of required libraries
+    "guardin-mind",
+    "selenium",
+    "webdriver-manager",
+    "colorama",
+    "pydantic"
+]

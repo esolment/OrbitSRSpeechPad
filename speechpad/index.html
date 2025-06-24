@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speechpad</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #recbtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            background-color: #4CAF50;
+        }
+        #recbtn.recording {
+            background-color: rgb(255, 165, 0);
+        }
+        #preview {
+            min-height: 60px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        #docel {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            resize: vertical;
+        }
+        .status {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Speechpad</h1>
+    
+    <button id="recbtn">Начать запись</button>
+    <div id="preview"></div>
+    <textarea id="docel" placeholder="Здесь будет появляться распознанный текст..."></textarea>
+    <div id="status" class="status">Готов к записи</div>
+
+    <script>
+        const recbtn = document.getElementById('recbtn');
+        const preview = document.getElementById('preview');
+        const docel = document.getElementById('docel');
+        const status = document.getElementById('status');
+        
+        let recognition;
+        let isRecording = false;
+        let finalTranscript = '';
+        let interimTranscript = '';
+        let microphoneAccessGranted = false;
+        let restartTimeout;
+
+        // Проверяем поддержку Web Speech API
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            status.textContent = 'Ваш браузер не поддерживает распознавание речи. Попробуйте Chrome или Edge.';
+            recbtn.disabled = true;
+        } else {
+            // Создаем объект распознавания речи
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'ru-RU';
+
+            // Обработчики событий распознавания
+            recognition.onstart = function() {
+                status.textContent = 'Запись начата... Говорите.';
+                isRecording = true;
+                recbtn.textContent = 'Остановить запись';
+                recbtn.classList.add('recording');
+                microphoneAccessGranted = true;
+            };
+
+            recognition.onend = function() {
+                if (isRecording && microphoneAccessGranted) {
+                    console.log('Автоматический перезапуск распознавания...');
+                    restartTimeout = setTimeout(() => {
+                        try {
+                            recognition.start();
+                        } catch(e) {
+                            console.error('Ошибка при перезапуске:', e);
+                            stopRecording();
+                        }
+                    }, 300);
+                }
+            };
+
+            recognition.onresult = function(event) {
+                interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript.trim();
+                    
+                    if (event.results[i].isFinal && transcript) {
+                        finalTranscript += transcript + ' ';
+                        docel.value += transcript + ' ';
+                        preview.textContent = '';
+                    } else if (transcript) {
+                        interimTranscript += transcript;
+                        preview.textContent = interimTranscript;
+                    }
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Ошибка распознавания:', event.error);
+                
+                if (event.error === 'not-allowed') {
+                    microphoneAccessGranted = false;
+                    status.textContent = 'Доступ к микрофону запрещен. Разрешите доступ в настройках браузера.';
+                    stopRecording();
+                } else if (event.error === 'no-speech') {
+                    // Просто продолжаем запись при отсутствии речи
+                    status.textContent = 'Готов к записи... Говорите.';
+                    return;
+                } else {
+                    status.textContent = 'Ошибка: ' + event.error;
+                }
+            };
+        }
+
+        // Обработчик клика по кнопке
+        recbtn.addEventListener('click', function() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        function startRecording() {
+            finalTranscript = '';
+            interimTranscript = '';
+            
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error('Ошибка запуска:', e);
+                status.textContent = 'Ошибка запуска распознавания. Попробуйте снова.';
+                microphoneAccessGranted = false;
+            }
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            clearTimeout(restartTimeout);
+            try {
+                recognition.stop();
+            } catch (e) {
+                console.error('Ошибка остановки:', e);
+            }
+            status.textContent = 'Запись остановлена';
+            recbtn.textContent = 'Начать запись';
+            recbtn.classList.remove('recording');
+            
+            if (interimTranscript) {
+                docel.value += interimTranscript + ' ';
+                preview.textContent = '';
+            }
+        }
+
+        // Автоматическая очистка при закрытии страницы
+        window.addEventListener('beforeunload', function() {
+            stopRecording();
+        });
+    </script>
+</body>
+</html>
