@@ -17,5 +17,6 @@ install-requires = [ # List of required libraries
     "selenium",
     "webdriver-manager",
     "colorama",
-    "pydantic"
+    "pydantic",
+    "concurrent_log_handler"
 ]
